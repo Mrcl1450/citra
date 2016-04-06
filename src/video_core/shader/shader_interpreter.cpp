@@ -631,6 +631,16 @@ void RunInterpreter(const Pica::Regs::ShaderConfig& config, const ShaderSetup& s
                 break;
             }
 
+            case OpCode::Id::EMIT: {
+                Shader::HandleEMIT(state);
+                break;
+            }
+
+            case OpCode::Id::SETEMIT: {
+                state.emit_params.raw = program_code[program_counter];
+                break;
+            }
+
             default:
                 LOG_ERROR(HW_GPU, "Unhandled instruction: 0x%02x (%s): 0x%08x",
                           (int)instr.opcode.Value().EffectiveOpCode(), instr.opcode.Value().GetInfo().name, instr.hex);
