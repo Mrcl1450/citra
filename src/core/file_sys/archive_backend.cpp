@@ -19,22 +19,24 @@ Path::Path(LowPathType type, u32 size, u32 pointer) : type(type) {
     switch (type) {
     case Binary:
     {
-        u8* data = Memory::GetPointer(pointer);
-        binary = std::vector<u8>(data, data + size);
+        binary.resize(size);
+        Memory::ReadBlock(pointer, binary.data(), binary.size());
         break;
     }
 
     case Char:
     {
-        const char* data = reinterpret_cast<const char*>(Memory::GetPointer(pointer));
-        string = std::string(data, size - 1); // Data is always null-terminated.
+        std::vector<char> data(size - 1); // Data is always null-terminated.
+        Memory::ReadBlock(pointer, reinterpret_cast<u8*>(data.data()), data.size());
+        string.assign(data.data(), data.size());
         break;
     }
 
     case Wchar:
     {
-        const char16_t* data = reinterpret_cast<const char16_t*>(Memory::GetPointer(pointer));
-        u16str = std::u16string(data, size/2 - 1); // Data is always null-terminated.
+        std::vector<char16_t> data(size / 2 - 1); // Data is always null-terminated.
+        Memory::ReadBlock(pointer, reinterpret_cast<u8*>(data.data()), data.size() * sizeof(char16_t));
+        u16str.assign(data.data(), data.size());
         break;
     }
 
