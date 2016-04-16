@@ -72,7 +72,7 @@ ResultCode SharedMemory::Map(VAddr address, MemoryPermission permissions,
     // HACK: Since there's no way to write to the memory block without mapping it onto the game
     // process yet, at least initialize memory the first time it's mapped.
     if (address != this->base_address) {
-        std::memset(Memory::GetPointer(address), 0, size);
+        Memory::ZeroBlock(address, size);
     }
 
     this->base_address = address;
