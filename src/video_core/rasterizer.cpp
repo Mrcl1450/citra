@@ -302,16 +302,30 @@ struct Fix12P4 {
         return val;
     }
 
-    bool operator < (const Fix12P4& oth) const {
-        return val < oth.val;
+    Fix12P4 operator * (const Fix12P4& oth) const {
+        return FromRaw(static_cast<s16>(val * oth.val / 16));
+    }
+
+    Fix12P4 operator / (const Fix12P4& oth) const {
+        return FromRaw(static_cast<s16>(val * 16 / oth.val));
     }
 
     Fix12P4 operator + (const Fix12P4& oth) const {
         return FromRaw(static_cast<s16>(val + oth.val));
     }
 
-    Fix12P4 operator / (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val * 16 / oth.val));
+    Fix12P4 operator - (const Fix12P4& oth) const {
+        return FromRaw(static_cast<s16>(val - oth.val));
+    }
+
+    Fix12P4& operator *= (const Fix12P4& oth) {
+        val = (*this * oth).val;
+        return *this;
+    }
+
+    Fix12P4& operator /= (const Fix12P4& oth) {
+        val = (*this / oth).val;
+        return *this;
     }
 
     Fix12P4& operator += (const Fix12P4& oth) {
@@ -319,6 +333,34 @@ struct Fix12P4 {
         return *this;
     }
 
+    Fix12P4& operator -= (const Fix12P4& oth) {
+        val -= oth.val;
+        return *this;
+    }
+
+    bool operator < (const Fix12P4& oth) const {
+        return val < oth.val;
+    }
+
+    bool operator > (const Fix12P4& oth) const {
+        return val > oth.val;
+    }
+
+    bool operator >= (const Fix12P4& oth) const {
+        return val >= oth.val;
+    }
+
+    bool operator <= (const Fix12P4& oth) const {
+        return val <= oth.val;
+    }
+
+    bool operator == (const Fix12P4& oth) const {
+        return val == oth.val;
+    }
+
+    bool operator != (const Fix12P4& oth) const {
+        return val != oth.val;
+    }
 
 private:
     s16 val;
@@ -333,8 +375,8 @@ private:
 static int SignedArea (const Math::Vec2<Fix12P4>& vtx1,
                        const Math::Vec2<Fix12P4>& vtx2,
                        const Math::Vec2<Fix12P4>& vtx3) {
-    const auto vec1 = Math::MakeVec(vtx2 - vtx1, 0);
-    const auto vec2 = Math::MakeVec(vtx3 - vtx1, 0);
+    const auto vec1 = Math::MakeVec<int>(vtx2.x - vtx1.x, vtx2.y - vtx1.y, 0);
+    const auto vec2 = Math::MakeVec<int>(vtx3.x - vtx1.x, vtx3.y - vtx1.y, 0);
     // TODO: There is a very small chance this will overflow for sizeof(int) == 4
     return Math::Cross(vec1, vec2).z;
 };
