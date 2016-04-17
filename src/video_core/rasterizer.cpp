@@ -303,15 +303,15 @@ struct Fix12P4 {
     }
 
     bool operator < (const Fix12P4& oth) const {
-        return (s16)*this < (s16)oth;
+        return val < oth.val;
     }
 
     Fix12P4 operator + (const Fix12P4& oth) const {
-        return FromRaw(val + oth.val);
+        return FromRaw(static_cast<s16>(val + oth.val));
     }
 
     Fix12P4 operator / (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>((int)val * 16 / (int)oth.val));
+        return FromRaw(static_cast<s16>(val * 16 / oth.val));
     }
 
     Fix12P4& operator += (const Fix12P4& oth) {
