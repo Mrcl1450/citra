@@ -280,7 +280,7 @@ struct Fix12P4 {
     }
 
     static u16 FracMask() { return 0xF; }
-    static u16 IntMask() { return (u16)~0xF; }
+    static s16 IntMask() { return static_cast<s16>(~0xF); }
 
     s16 Int() const {
         return static_cast<s16>((val & IntMask()) / 16);
@@ -291,7 +291,7 @@ struct Fix12P4 {
     }
 
     Fix12P4 Ceil() const {
-        return FromRaw(val + FracMask()).Floor();
+        return FromRaw(static_cast<s16>(val + FracMask())).Floor();
     }
 
     Fix12P4 Floor() const {
