@@ -27,7 +27,7 @@ Path::Path(LowPathType type, u32 size, u32 pointer) : type(type) {
     case Char:
     {
         std::vector<char> data(size - 1); // Data is always null-terminated.
-        Memory::ReadBlock(pointer, reinterpret_cast<u8*>(data.data()), data.size());
+        Memory::ReadBlock(pointer, data.data(), data.size());
         string.assign(data.data(), data.size());
         break;
     }
@@ -35,7 +35,7 @@ Path::Path(LowPathType type, u32 size, u32 pointer) : type(type) {
     case Wchar:
     {
         std::vector<char16_t> data(size / 2 - 1); // Data is always null-terminated.
-        Memory::ReadBlock(pointer, reinterpret_cast<u8*>(data.data()), data.size() * sizeof(char16_t));
+        Memory::ReadBlock(pointer, data.data(), data.size() * sizeof(char16_t));
         u16str.assign(data.data(), data.size());
         break;
     }

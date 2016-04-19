@@ -226,7 +226,7 @@ ResultVal<bool> Directory::SyncRequest() {
 
             // Number of entries actually read
             cmd_buff[2] = backend->Read(entries.size(), entries.data());
-            Memory::WriteBlock(address, reinterpret_cast<u8*>(entries.data()), entries.size() * sizeof(FileSys::Entry));
+            Memory::WriteBlock(address, entries.data(), entries.size() * sizeof(FileSys::Entry));
             break;
         }
 
