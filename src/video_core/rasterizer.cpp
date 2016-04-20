@@ -434,32 +434,11 @@ static void ProcessTriangleInternal(const Shader::OutputVertex& v0,
             Math::Vec4<u8> texture_color[3]{};
             for (int i = 0; i < 3; ++i) {
                 const auto& texture = textures[i];
+
                 if (!texture.enabled)
                     continue;
 
-                DEBUG_ASSERT(0 != texture.config.address);
-
-                float24 u = uv[i].u();
-                float24 v = uv[i].v();
-                DEBUG_ASSERT_MSG(i == 0 || texture.config.type == Regs::TextureConfig::Texture2D, "Texture types only supported for texture 0");
-                switch(texture.config.type) {
-                case Regs::TextureConfig::Texture2D:
-                    break;
-                case Regs::TextureConfig::Projection2D: {
-                    auto tc0_w = GetInterpolatedAttribute(v0.tc0_w, v1.tc0_w, v2.tc0_w);
-                    u /= tc0_w;
-                    v /= tc0_w;
-                    break;
-                }
-                default:
-                    LOG_ERROR(HW_GPU, "Unhandled texture type %x", (int)texture.config.type);
-                    UNIMPLEMENTED();
-                    break;
-                }
-                int s = (int)(u * float24::FromFloat32(static_cast<float>(texture.config.width))).ToFloat32();
-                int t = (int)(v * float24::FromFloat32(static_cast<float>(texture.config.height))).ToFloat32();
-
-
+                // Calculate the texture coordinate for wrapmode
                 static auto GetWrappedTexCoord = [](Regs::TextureConfig::WrapMode mode, int val, unsigned size) {
                     switch (mode) {
                         case Regs::TextureConfig::ClampToEdge:
@@ -488,26 +467,94 @@ static void ProcessTriangleInternal(const Shader::OutputVertex& v0,
                     }
                 };
 
-                if ((texture.config.wrap_s == Regs::TextureConfig::ClampToBorder && (s < 0 || s >= texture.config.width))
-                    || (texture.config.wrap_t == Regs::TextureConfig::ClampToBorder && (t < 0 || t >= texture.config.height))) {
-                    auto border_color = texture.config.border_color;
-                    texture_color[i] = { border_color.r, border_color.g, border_color.b, border_color.a };
-                } else {
-                    // Textures are laid out from bottom to top, hence we invert the t coordinate.
-                    // NOTE: This may not be the right place for the inversion.
-                    // TODO: Check if this applies to ETC textures, too.
-                    s = GetWrappedTexCoord(texture.config.wrap_s, s, texture.config.width);
-                    t = texture.config.height - 1 - GetWrappedTexCoord(texture.config.wrap_t, t, texture.config.height);
+                // Lookup a pixel from a texture in pixel-coordinates
+                auto LookupTexture = [&](int s, int t) -> Math::Vec4<u8> {
+                    if ((texture.config.wrap_s == Regs::TextureConfig::ClampToBorder && (s < 0 || s >= texture.config.width))
+                        || (texture.config.wrap_t == Regs::TextureConfig::ClampToBorder && (t < 0 || t >= texture.config.height))) {
+                        auto border_color = texture.config.border_color;
+                        return Math::MakeVec<u8>(border_color.r, border_color.g, border_color.b, border_color.a);
+                    } else {
 
-                    u8* texture_data = Memory::GetPhysicalPointer(texture.config.GetPhysicalAddress());
-                    auto info = DebugUtils::TextureInfo::FromPicaRegister(texture.config, texture.format);
+                        // Textures are laid out from bottom to top, hence we invert the t coordinate.
+                        // NOTE: This may not be the right place for the inversion.
+                        // TODO: Check if this applies to ETC textures, too.
+                        s = GetWrappedTexCoord(texture.config.wrap_s, s, texture.config.width);
+                        t = texture.config.height - 1 - GetWrappedTexCoord(texture.config.wrap_t, t, texture.config.height);
 
-                    // TODO: Apply the min and mag filters to the texture
-                    texture_color[i] = DebugUtils::LookupTexture(texture_data, s, t, info);
+                        u8* texture_data = Memory::GetPhysicalPointer(texture.config.GetPhysicalAddress());
+                        auto info = DebugUtils::TextureInfo::FromPicaRegister(texture.config, texture.format);
+
 #if PICA_DUMP_TEXTURES
-                    DebugUtils::DumpTexture(texture.config, texture_data);
+                        DebugUtils::DumpTexture(texture.config, texture_data);
 #endif
+
+                        return DebugUtils::LookupTexture(texture_data, s, t, info);
+                    }
+                };
+
+                // Sample texture with filtering using uv-coordinates
+                auto SampleTexture = [&](float24 u, float24 v) -> Math::Vec4<u8> {
+
+                    DEBUG_ASSERT(0 != texture.config.address);
+
+                    float s = (u * float24::FromFloat32(static_cast<float>(texture.config.width))).ToFloat32();
+                    float t = (v * float24::FromFloat32(static_cast<float>(texture.config.height))).ToFloat32();
+
+                    int is = (int)s;
+                    int it = (int)t;
+
+                    float fs = s - is;
+                    float ft = t - it;
+
+//FIXME: Calculate lambda and use min_filter
+                    switch (texture.config.min_filter) {
+                    case Regs::TextureConfig::Nearest:
+                        return LookupTexture(is, it);
+                    case Regs::TextureConfig::Linear:
+                    {
+                        Math::Vec4<u8> samples[] = {
+                            LookupTexture(is    , it    ),
+                            LookupTexture(is + 1, it    ),
+                            LookupTexture(is    , it + 1),
+                            LookupTexture(is + 1, it + 1),
+                        };
+                        auto s1 = Math::Lerp(samples[0], samples[1], fs);
+                        auto s2 = Math::Lerp(samples[2], samples[3], fs);
+                        return Math::Lerp(s1, s2, ft).Cast<u8>();
+                    }
+                    default:
+                        LOG_CRITICAL(HW_GPU, "Unknown texture filter %x", texture.config.mag_filter.Value());
+                        UNIMPLEMENTED();
+                        break;
+                    }
+
+                    // Fallback to nearest sampling
+                    return LookupTexture(is, it);
+
+                };
+
+                float24 u = uv[i].u();
+                float24 v = uv[i].v();
+                if (i == 0) {
+                    // Sample according to texture type (only unit 0 according to 3DBrew)
+                    switch(texture.config.type) {
+                    case Regs::TextureConfig::Texture2D:
+                        texture_color[i] = SampleTexture(u, v);
+                        break;
+                    case Regs::TextureConfig::Projection2D: {
+                        auto tc0_w = GetInterpolatedAttribute(v0.tc0_w, v1.tc0_w, v2.tc0_w);
+                        texture_color[i] = SampleTexture(u / tc0_w, v / tc0_w);
+                        break;
+                    }
+                    default:
+                        LOG_ERROR(HW_GPU, "Unhandled texture type %x", (int)texture.config.type);
+                        UNIMPLEMENTED();
+                        break;
+                    }
+                } else {
+                    texture_color[i] = SampleTexture(u, v);
                 }
+
             }
 
             // Texture environment - consists of 6 stages of color and alpha combining.
