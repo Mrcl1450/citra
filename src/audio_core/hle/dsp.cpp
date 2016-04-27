@@ -10,6 +10,7 @@
 #include "audio_core/hle/pipe.h"
 #include "audio_core/hle/source.h"
 #include "audio_core/sink.h"
+#include "audio_core/time_stretch.h"
 
 #include "core/hle/service/dsp_dsp.h"
 
@@ -54,6 +55,7 @@ static std::array<Source, num_sources> sources = {
     Source(18), Source(19), Source(20), Source(21), Source(22), Source(23)
 };
 static Mixers mixers;
+static AudioCore::TimeStretcher time_stretcher;
 
 static StereoFrame16 GenerateCurrentFrame() {
     SharedMemory& read = ReadRegion();

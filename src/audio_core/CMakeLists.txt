@@ -8,6 +8,7 @@ set(SRCS
             hle/source.cpp
             interpolate.cpp
             sink_details.cpp
+            time_stretch.cpp
             )
 
 set(HEADERS
@@ -23,6 +24,7 @@ set(HEADERS
             null_sink.h
             sink.h
             sink_details.h
+            time_stretch.h
             )
 
 include_directories(../../externals/soundtouch/include)
