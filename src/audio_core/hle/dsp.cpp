@@ -11,6 +11,8 @@
 #include "audio_core/hle/source.h"
 #include "audio_core/sink.h"
 
+#include "core/hle/service/dsp_dsp.h"
+
 namespace DSP {
 namespace HLE {
 
@@ -103,7 +105,12 @@ void Shutdown() {
 bool Tick() {
     StereoFrame16 current_frame = {{}};
 
-    current_frame = GenerateCurrentFrame();
+    if (DSP_DSP::IsSemaphoreSignalled() && GetDspState() == DspState::On) {
+        // The ARM11 has finished writing to the shared memory region.
+        DSP_DSP::ResetSemaphore();
+
+        current_frame = GenerateCurrentFrame();
+    }
 
     return true;
 }
