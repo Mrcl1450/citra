@@ -266,8 +266,12 @@ static u8 PerformStencilAction(Regs::StencilAction action, u8 old_stencil, u8 re
 static int SignedArea (const Math::Vec2<Fix12P4>& vtx1,
                        const Math::Vec2<Fix12P4>& vtx2,
                        const Math::Vec2<Fix12P4>& vtx3) {
-    const auto vec1 = Math::MakeVec<int>(vtx2.x - vtx1.x, vtx2.y - vtx1.y, 0);
-    const auto vec2 = Math::MakeVec<int>(vtx3.x - vtx1.x, vtx3.y - vtx1.y, 0);
+    const auto vec1 = Math::MakeVec<int>(static_cast<s16>(vtx2.x) - static_cast<s16>(vtx1.x),
+                                         static_cast<s16>(vtx2.y) - static_cast<s16>(vtx1.y),
+                                         0);
+    const auto vec2 = Math::MakeVec<int>(static_cast<s16>(vtx3.x) - static_cast<s16>(vtx1.x),
+                                         static_cast<s16>(vtx3.y) - static_cast<s16>(vtx1.y),
+                                         0);
     // TODO: There is a very small chance this will overflow for sizeof(int) == 4
     return Math::Cross(vec1, vec2).z;
 };
@@ -356,7 +360,11 @@ static void ProcessTriangleInternal(const Shader::OutputVertex& v0,
         } else {
             // check if vertex is on our left => right side
             // TODO: Not sure how likely this is to overflow
-            return (int)vtx.x < (int)line1.x + ((int)line2.x - (int)line1.x) * ((int)vtx.y - (int)line1.y) / ((int)line2.y - (int)line1.y);
+            int line_dx = static_cast<s16>(line2.x) - static_cast<s16>(line1.x);
+            int line_dy = static_cast<s16>(line2.y) - static_cast<s16>(line1.y);
+            int line_vtx_dx = static_cast<s16>(vtx.x) - static_cast<s16>(line1.x);
+            int line_vtx_dy = static_cast<s16>(vtx.y) - static_cast<s16>(line1.y);
+            return line_vtx_dx < line_vtx_dy * line_dx / line_dy;
         }
     };
     int bias0 = IsRightSideOrFlatBottomEdge(vtxpos[0].xy(), vtxpos[1].xy(), vtxpos[2].xy()) ? -1 : 0;

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 
 #include "common/common_types.h"
@@ -12,113 +13,143 @@
 namespace Pica {
 
 /**
+ * Class for storing and operating on Fixed point types using:
+ *
+ * - 12 integer bits
+ * - 4 fraction bits
+ * - Negative values in two's complement
+ *
+ * @todo Verify on HW where and how this is used.
+ * @todo Create a template for more fixed point types and use this elsewhere too.
  */
-struct Fix12P4 {
-    Fix12P4() {}
+class Fix12P4 final {
+public:
+    constexpr Fix12P4() = default;
+    constexpr Fix12P4(const Fix12P4&) = default;
+    constexpr Fix12P4(Fix12P4&&) = default;
+    constexpr explicit Fix12P4(int16_t raw) noexcept : value(raw) {}
 
-    static Fix12P4 FromRaw(s16 val) {
-        Fix12P4 res;
-        res.val = val;
-        return res;
+    Fix12P4& operator=(const Fix12P4&) = default;
+    Fix12P4& operator=(Fix12P4&&) = default;
+
+    static constexpr Fix12P4 FromInt(int16_t int_val, uint16_t frac_val = 0) noexcept {
+        return Fix12P4{static_cast<int16_t>(((int_val * 16) & IntMask()) | (frac_val & FracMask()))};
     }
 
-    static Fix12P4 FromInt(s16 intVal, u16 fracVal = 0) {
-        return FromRaw(static_cast<s16>(((intVal * 16) & IntMask()) | (fracVal & FracMask())));
+    static Fix12P4 FromFloat(float float_val) noexcept {
+        return Fix12P4{static_cast<int16_t>(::round(float_val * 16.0f))};
     }
 
-    static Fix12P4 FromFloat(float fltVal) {
-        return FromRaw(static_cast<s16>(round(fltVal * 16.0f)));
+    static constexpr Fix12P4 Zero() noexcept {
+        return Fix12P4{static_cast<int16_t>(0)};
     }
 
-    static Fix12P4 Zero() {
-        return FromRaw(0);
+    static constexpr int16_t FracMask() noexcept {
+        return static_cast<int16_t>(0xF);
     }
 
-    static u16 FracMask() { return 0xF; }
-    static s16 IntMask() { return static_cast<s16>(~0xF); }
-
-    s16 Int() const {
-        return static_cast<s16>((val & IntMask()) / 16);
+    static constexpr int16_t IntMask() noexcept {
+        return static_cast<int16_t>(~0xF);
     }
 
-    u16 Frac() const {
-        return static_cast<u16>(val & FracMask());
+    constexpr int16_t Int() const noexcept {
+        return static_cast<int16_t>((value & IntMask()) / 16);
     }
 
-    Fix12P4 Ceil() const {
-        return FromRaw(static_cast<s16>(val + FracMask())).Floor();
+    constexpr uint16_t Frac() const noexcept {
+        return static_cast<uint16_t>(value & FracMask());
     }
 
-    Fix12P4 Floor() const {
-        return FromRaw(static_cast<s16>(val & IntMask()));
+    constexpr Fix12P4 Ceil() const noexcept {
+        return Fix12P4{static_cast<int16_t>(value + FracMask())}.Floor();
     }
 
-    operator s16() const {
-        return val;
+    constexpr Fix12P4 Floor() const noexcept {
+        return Fix12P4{static_cast<int16_t>(value & IntMask())};
     }
 
-    Fix12P4 operator * (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val * oth.val / 16));
+    constexpr explicit operator int16_t() const noexcept {
+        return value;
     }
 
-    Fix12P4 operator / (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val * 16 / oth.val));
+    constexpr Fix12P4 operator+() const noexcept {
+        return Fix12P4{static_cast<int16_t>(+value)};
     }
 
-    Fix12P4 operator + (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val + oth.val));
+    constexpr Fix12P4 operator-() const noexcept {
+        return Fix12P4{static_cast<int16_t>(-value)};
     }
 
-    Fix12P4 operator - (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val - oth.val));
+    constexpr Fix12P4 operator+(const Fix12P4& other) const noexcept {
+        return Fix12P4{static_cast<int16_t>(value + other.value)};
     }
 
-    Fix12P4& operator *= (const Fix12P4& oth) {
-        val = (*this * oth).val;
+    constexpr Fix12P4 operator-(const Fix12P4& other) const noexcept {
+        return Fix12P4{static_cast<int16_t>(value - other.value)};
+    }
+
+    constexpr Fix12P4 operator*(const Fix12P4& other) const noexcept {
+        return Fix12P4{Multiply(value, other.value)};
+    }
+
+    constexpr Fix12P4 operator/(const Fix12P4& other) const noexcept {
+        return Fix12P4{Divide(value, other.value)};
+    }
+
+    Fix12P4& operator+=(const Fix12P4& other) noexcept {
+        value += other.value;
         return *this;
     }
 
-    Fix12P4& operator /= (const Fix12P4& oth) {
-        val = (*this / oth).val;
+    Fix12P4& operator-=(const Fix12P4& other) noexcept {
+        value -= other.value;
         return *this;
     }
 
-    Fix12P4& operator += (const Fix12P4& oth) {
-        val += oth.val;
+    Fix12P4& operator*=(const Fix12P4& other) noexcept {
+        value = Multiply(value, other.value);
         return *this;
     }
 
-    Fix12P4& operator -= (const Fix12P4& oth) {
-        val -= oth.val;
+    Fix12P4& operator/=(const Fix12P4& other) noexcept {
+        value = Divide(value, other.value);
         return *this;
     }
 
-    bool operator < (const Fix12P4& oth) const {
-        return val < oth.val;
+    friend constexpr bool operator<(const Fix12P4& left, const Fix12P4& right) noexcept {
+        return left.value < right.value;
     }
 
-    bool operator > (const Fix12P4& oth) const {
-        return val > oth.val;
+    friend constexpr bool operator>(const Fix12P4& left, const Fix12P4& right) noexcept {
+        return operator<(right, left);
     }
 
-    bool operator >= (const Fix12P4& oth) const {
-        return val >= oth.val;
+    friend constexpr bool operator>=(const Fix12P4& left, const Fix12P4& right) noexcept {
+        return !operator<(left, right);
     }
 
-    bool operator <= (const Fix12P4& oth) const {
-        return val <= oth.val;
+    friend constexpr bool operator<=(const Fix12P4& left, const Fix12P4& right) noexcept {
+        return !operator<(right, left);
     }
 
-    bool operator == (const Fix12P4& oth) const {
-        return val == oth.val;
+    friend constexpr bool operator==(const Fix12P4& left, const Fix12P4& right) noexcept {
+        return left.value == right.value;
     }
 
-    bool operator != (const Fix12P4& oth) const {
-        return val != oth.val;
+    friend constexpr bool operator!=(const Fix12P4& left, const Fix12P4& right) noexcept {
+        return !operator==(left, right);
     }
 
 private:
-    s16 val;
+    static constexpr int16_t Multiply(int16_t left, int16_t right) noexcept {
+        return static_cast<int16_t>((left * right) / 16);
+    }
+
+    static constexpr int16_t Divide(int16_t left, int16_t right) noexcept {
+        return static_cast<int16_t>((left * 16) / right);
+    }
+
+    int16_t value = 0;
 };
 
 
