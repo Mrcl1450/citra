@@ -257,115 +257,6 @@ static u8 PerformStencilAction(Regs::StencilAction action, u8 old_stencil, u8 re
     }
 }
 
-// NOTE: Assuming that rasterizer coordinates are 12.4 fixed-point values
-struct Fix12P4 {
-    Fix12P4() {}
-
-    static Fix12P4 FromRaw(s16 val) {
-        Fix12P4 res;
-        res.val = val;
-        return res;
-    }
-
-    static Fix12P4 FromInt(s16 intVal, u16 fracVal = 0) {
-        return FromRaw(static_cast<s16>(((intVal * 16) & IntMask()) | (fracVal & FracMask())));
-    }
-
-    static Fix12P4 FromFloat(float fltVal) {
-        return FromRaw(static_cast<s16>(round(fltVal * 16.0f)));
-    }
-
-    static Fix12P4 Zero() {
-        return FromRaw(0);
-    }
-
-    static u16 FracMask() { return 0xF; }
-    static s16 IntMask() { return static_cast<s16>(~0xF); }
-
-    s16 Int() const {
-        return static_cast<s16>((val & IntMask()) / 16);
-    }
-
-    u16 Frac() const {
-        return static_cast<u16>(val & FracMask());
-    }
-
-    Fix12P4 Ceil() const {
-        return FromRaw(static_cast<s16>(val + FracMask())).Floor();
-    }
-
-    Fix12P4 Floor() const {
-        return FromRaw(static_cast<s16>(val & IntMask()));
-    }
-
-    operator s16() const {
-        return val;
-    }
-
-    Fix12P4 operator * (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val * oth.val / 16));
-    }
-
-    Fix12P4 operator / (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val * 16 / oth.val));
-    }
-
-    Fix12P4 operator + (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val + oth.val));
-    }
-
-    Fix12P4 operator - (const Fix12P4& oth) const {
-        return FromRaw(static_cast<s16>(val - oth.val));
-    }
-
-    Fix12P4& operator *= (const Fix12P4& oth) {
-        val = (*this * oth).val;
-        return *this;
-    }
-
-    Fix12P4& operator /= (const Fix12P4& oth) {
-        val = (*this / oth).val;
-        return *this;
-    }
-
-    Fix12P4& operator += (const Fix12P4& oth) {
-        val += oth.val;
-        return *this;
-    }
-
-    Fix12P4& operator -= (const Fix12P4& oth) {
-        val -= oth.val;
-        return *this;
-    }
-
-    bool operator < (const Fix12P4& oth) const {
-        return val < oth.val;
-    }
-
-    bool operator > (const Fix12P4& oth) const {
-        return val > oth.val;
-    }
-
-    bool operator >= (const Fix12P4& oth) const {
-        return val >= oth.val;
-    }
-
-    bool operator <= (const Fix12P4& oth) const {
-        return val <= oth.val;
-    }
-
-    bool operator == (const Fix12P4& oth) const {
-        return val == oth.val;
-    }
-
-    bool operator != (const Fix12P4& oth) const {
-        return val != oth.val;
-    }
-
-private:
-    s16 val;
-};
-
 /**
  * Calculate signed area of the triangle spanned by the three argument vertices.
  * The sign denotes an orientation.
@@ -396,6 +287,9 @@ static void ProcessTriangleInternal(const Shader::OutputVertex& v0,
     const auto& framebuffer = regs.framebuffer;
     const auto& output_merger = regs.output_merger;
     MICROPROFILE_SCOPE(GPU_Rasterization);
+
+    // NOTE: Assuming that rasterizer coordinates are signed 12.4 fixed-point values.
+    //       This type is what PSP uses, we haven't tested what the 3DS uses.
 
     // vertex positions in rasterizer coordinates
     static auto FloatToFix = [](float24 flt) {

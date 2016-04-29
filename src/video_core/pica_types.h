@@ -12,6 +12,117 @@
 namespace Pica {
 
 /**
+ */
+struct Fix12P4 {
+    Fix12P4() {}
+
+    static Fix12P4 FromRaw(s16 val) {
+        Fix12P4 res;
+        res.val = val;
+        return res;
+    }
+
+    static Fix12P4 FromInt(s16 intVal, u16 fracVal = 0) {
+        return FromRaw(static_cast<s16>(((intVal * 16) & IntMask()) | (fracVal & FracMask())));
+    }
+
+    static Fix12P4 FromFloat(float fltVal) {
+        return FromRaw(static_cast<s16>(round(fltVal * 16.0f)));
+    }
+
+    static Fix12P4 Zero() {
+        return FromRaw(0);
+    }
+
+    static u16 FracMask() { return 0xF; }
+    static s16 IntMask() { return static_cast<s16>(~0xF); }
+
+    s16 Int() const {
+        return static_cast<s16>((val & IntMask()) / 16);
+    }
+
+    u16 Frac() const {
+        return static_cast<u16>(val & FracMask());
+    }
+
+    Fix12P4 Ceil() const {
+        return FromRaw(static_cast<s16>(val + FracMask())).Floor();
+    }
+
+    Fix12P4 Floor() const {
+        return FromRaw(static_cast<s16>(val & IntMask()));
+    }
+
+    operator s16() const {
+        return val;
+    }
+
+    Fix12P4 operator * (const Fix12P4& oth) const {
+        return FromRaw(static_cast<s16>(val * oth.val / 16));
+    }
+
+    Fix12P4 operator / (const Fix12P4& oth) const {
+        return FromRaw(static_cast<s16>(val * 16 / oth.val));
+    }
+
+    Fix12P4 operator + (const Fix12P4& oth) const {
+        return FromRaw(static_cast<s16>(val + oth.val));
+    }
+
+    Fix12P4 operator - (const Fix12P4& oth) const {
+        return FromRaw(static_cast<s16>(val - oth.val));
+    }
+
+    Fix12P4& operator *= (const Fix12P4& oth) {
+        val = (*this * oth).val;
+        return *this;
+    }
+
+    Fix12P4& operator /= (const Fix12P4& oth) {
+        val = (*this / oth).val;
+        return *this;
+    }
+
+    Fix12P4& operator += (const Fix12P4& oth) {
+        val += oth.val;
+        return *this;
+    }
+
+    Fix12P4& operator -= (const Fix12P4& oth) {
+        val -= oth.val;
+        return *this;
+    }
+
+    bool operator < (const Fix12P4& oth) const {
+        return val < oth.val;
+    }
+
+    bool operator > (const Fix12P4& oth) const {
+        return val > oth.val;
+    }
+
+    bool operator >= (const Fix12P4& oth) const {
+        return val >= oth.val;
+    }
+
+    bool operator <= (const Fix12P4& oth) const {
+        return val <= oth.val;
+    }
+
+    bool operator == (const Fix12P4& oth) const {
+        return val == oth.val;
+    }
+
+    bool operator != (const Fix12P4& oth) const {
+        return val != oth.val;
+    }
+
+private:
+    s16 val;
+};
+
+
+/**
  * Template class for converting arbitrary Pica float types to IEEE 754 32-bit single-precision
  * floating point.
  *
