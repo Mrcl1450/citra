@@ -481,7 +481,7 @@ void ZeroBlock(const VAddr dest_addr, const size_t size) {
         case PageType::Special: {
             DEBUG_ASSERT(GetMMIOHandler(current_vaddr));
 
-            static std::array<u8, PAGE_SIZE> zeros = {};
+            static const std::array<u8, PAGE_SIZE> zeros = {};
             GetMMIOHandler(current_vaddr)->WriteBlock(current_vaddr, zeros.data(), copy_amount);
             break;
         }
