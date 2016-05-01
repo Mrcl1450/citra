@@ -23,19 +23,6 @@ class Sink;
 namespace DSP {
 namespace HLE {
 
-// The application-accessible region of DSP memory consists of two parts.
-// Both are marked as IO and have Read/Write permissions.
-//
-// First Region:  0x1FF50000 (Size: 0x8000)
-// Second Region: 0x1FF70000 (Size: 0x8000)
-//
-// The DSP reads from each region alternately based on the frame counter for each region much like a
-// double-buffer. The frame counter is located as the very last u16 of each region and is incremented
-// each audio tick.
-
-constexpr VAddr region0_base = 0x1FF50000;
-constexpr VAddr region1_base = 0x1FF70000;
-
 /**
  * The DSP is native 16-bit. The DSP also appears to be big-endian. When reading 32-bit numbers from
  * its memory regions, the higher and lower 16-bit halves are swapped compared to the little-endian
@@ -524,6 +511,19 @@ static_assert(offsetof(SharedMemory, unknown14) % 2 == 0, "Structures in DSP::HL
 
 #undef INSERT_PADDING_DSPWORDS
 #undef ASSERT_DSP_STRUCT
+
+// The application-accessible region of DSP memory consists of two parts.
+// Both are marked as IO and have Read/Write permissions.
+//
+// First Region:  0x1FF50000 (Size: 0x8000)
+// Second Region: 0x1FF70000 (Size: 0x8000)
+//
+// The DSP reads from each region alternately based on the frame counter for each region much like a
+// double-buffer. The frame counter is located as the very last u16 of each region and is incremented
+// each audio tick.
+
+constexpr VAddr region0_base = 0x1FF50000;
+constexpr VAddr region1_base = 0x1FF70000;
 
 /// Initialize DSP hardware
 void Init();
