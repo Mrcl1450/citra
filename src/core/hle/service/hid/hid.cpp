@@ -282,7 +282,7 @@ void Init() {
     using Kernel::MemoryPermission;
     shared_mem = SharedMemory::Create(nullptr, 0x1000,
                                       MemoryPermission::ReadWrite, MemoryPermission::Read,
-                                      0, Kernel::MemoryRegion::BASE, "HID:SharedMem");
+                                      0, Kernel::MemoryRegion::BASE, "HID:SharedMemory");
 
     next_pad_index = 0;
     next_touch_index = 0;

@@ -43,13 +43,15 @@ void Initialize(Service::Interface* self) {
     u32* cmd_buff = Kernel::GetCommandBuffer();
 
     u32 size = Common::AlignUp(cmd_buff[1], Memory::PAGE_SIZE);
+    using Kernel::MemoryPermission;
     shared_memory = Kernel::SharedMemory::Create(nullptr, size,
-            Kernel::MemoryPermission::ReadWrite, Kernel::MemoryPermission::ReadWrite, 0, Kernel::MemoryRegion::BASE, "CSNDSharedMem");
+                                                 MemoryPermission::ReadWrite, MemoryPermission::ReadWrite,
+                                                 0, Kernel::MemoryRegion::BASE, "CSND:SharedMemory");
 
     mutex = Kernel::Mutex::Create(false);
 
-    cmd_buff[1] = 0;
-    cmd_buff[2] = 0x4000000;
+    cmd_buff[1] = RESULT_SUCCESS.raw;
+    cmd_buff[2] = IPC::MoveHandleDesc(2);
     cmd_buff[3] = Kernel::g_handle_table.Create(mutex).MoveFrom();
     cmd_buff[4] = Kernel::g_handle_table.Create(shared_memory).MoveFrom();
 }
