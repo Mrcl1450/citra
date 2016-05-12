@@ -42,8 +42,7 @@ ResultCode MiiSelector::ReceiveParameter(const Service::APT::MessageParameter& p
     // Send the response message with the newly created SharedMemory
     Service::APT::MessageParameter result;
     result.signal = static_cast<u32>(Service::APT::SignalType::LibAppFinished);
-    result.data = nullptr;
-    result.buffer_size = 0;
+    result.buffer.clear();
     result.destination_id = static_cast<u32>(Service::APT::AppletId::Application);
     result.sender_id = static_cast<u32>(id);
     result.object = framebuffer_memory;
@@ -65,8 +64,7 @@ ResultCode MiiSelector::StartImpl(const Service::APT::AppletStartupParameter& pa
 
     // Let the application know that we're closing
     Service::APT::MessageParameter message;
-    message.buffer_size = parameter.buffer_size;
-    message.data = parameter.data;
+    message.buffer = parameter.buffer;
     message.signal = static_cast<u32>(Service::APT::SignalType::LibAppClosed);
     message.destination_id = static_cast<u32>(Service::APT::AppletId::Application);
     message.sender_id = static_cast<u32>(id);
