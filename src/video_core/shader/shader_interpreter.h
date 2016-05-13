@@ -11,7 +11,7 @@ namespace Shader {
 template <bool Debug> struct UnitState;
 
 template<bool Debug>
-void RunInterpreter(const Pica::Regs::ShaderConfig& config, const ShaderSetup& setup, UnitState<Debug>& state);
+void RunInterpreter(UnitState<Debug>& state);
 
 } // namespace
 
