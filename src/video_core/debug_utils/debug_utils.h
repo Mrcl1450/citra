@@ -41,7 +41,6 @@ public:
         IncomingPrimitiveBatch,
         FinishedPrimitiveBatch,
         VertexShaderInvocation,
-        GeometryShaderInvocation,
         IncomingDisplayTransfer,
         GSPCommandProcessed,
         BufferSwapped,
