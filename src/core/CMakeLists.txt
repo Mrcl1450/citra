@@ -54,7 +54,6 @@ set(SRCS
             hle/service/apt/apt_a.cpp
             hle/service/apt/apt_s.cpp
             hle/service/apt/apt_u.cpp
-            hle/service/apt/bcfnt/bcfnt.cpp
             hle/service/boss/boss.cpp
             hle/service/boss/boss_p.cpp
             hle/service/boss/boss_u.cpp
@@ -189,7 +188,6 @@ set(HEADERS
             hle/service/apt/apt_a.h
             hle/service/apt/apt_s.h
             hle/service/apt/apt_u.h
-            hle/service/apt/bcfnt/bcfnt.h
             hle/service/boss/boss.h
             hle/service/boss/boss_p.h
             hle/service/boss/boss_u.h
