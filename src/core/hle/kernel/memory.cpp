@@ -108,6 +108,7 @@ struct MemoryArea {
 // We don't declare the IO regions in here since its handled by other means.
 static MemoryArea memory_areas[] = {
     {VRAM_VADDR,          VRAM_SIZE,              "VRAM"},          // Video memory (VRAM)
+    {TLS_AREA_VADDR,      TLS_AREA_SIZE,          "TLS Area"},      // TLS memory
 };
 
 }

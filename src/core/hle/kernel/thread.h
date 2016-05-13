@@ -127,7 +127,7 @@ public:
      * Returns the Thread Local Storage address of the current thread
      * @returns VAddr of the thread's TLS
      */
-    VAddr GetTLSAddress() const { return tls_address; }
+    VAddr GetTLSAddress() const;
 
     Core::ThreadContext context;
 
@@ -144,7 +144,7 @@ public:
 
     s32 processor_id;
 
-    VAddr tls_address; ///< Virtual address of the Thread Local Storage of the thread
+    s32 tls_index; ///< Index of the Thread Local Storage of the thread
 
     bool waitsynch_waited; ///< Set to true if the last svcWaitSynch call caused the thread to wait
 
