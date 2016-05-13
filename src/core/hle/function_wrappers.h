@@ -170,8 +170,7 @@ template<ResultCode func(s64*, u32, s32)> void Wrap() {
 
 template<ResultCode func(u32*, u32, u32, u32, u32)> void Wrap() {
     u32 param_1 = 0;
-    // The last parameter is passed in R0 instead of R4
-    u32 retval = func(&param_1, PARAM(1), PARAM(2), PARAM(3), PARAM(0)).raw;
+    u32 retval = func(&param_1, PARAM(1), PARAM(2), PARAM(3), PARAM(4)).raw;
     Core::g_app_core->SetReg(1, param_1);
     FuncReturn(retval);
 }
