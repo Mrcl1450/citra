@@ -19,6 +19,7 @@ template<typename VertexType>
 void PrimitiveAssembler<VertexType>::SubmitVertex(VertexType& vtx, TriangleHandler triangle_handler)
 {
     switch (topology) {
+        // TODO: Figure out what's different with TriangleTopology::Shader.
         case Regs::TriangleTopology::List:
         case Regs::TriangleTopology::Shader:
             if (buffer_index < 2) {

@@ -36,11 +36,11 @@ class JitShader : public Gen::XCodeBlock {
 public:
     JitShader();
 
-    void Run(const Pica::Regs::ShaderConfig& config, const ShaderSetup& setup, UnitState<false>& state) const {
-        program(&setup, code_ptr[config.main_offset], &state);
+    void Run(void* registers, unsigned offset) const {
+        program(registers, code_ptr[offset]);
     }
 
-    void Compile(const ShaderSetup& setup);
+    void Compile();
 
     void Compile_ADD(Instruction instr);
     void Compile_DP3(Instruction instr);
@@ -65,8 +65,6 @@ public:
     void Compile_CALLU(Instruction instr);
     void Compile_IF(Instruction instr);
     void Compile_LOOP(Instruction instr);
-    void Compile_EMIT(Instruction instr);
-    void Compile_SETEMIT(Instruction instr);
     void Compile_JMP(Instruction instr);
     void Compile_CMP(Instruction instr);
     void Compile_MAD(Instruction instr);
@@ -102,17 +100,6 @@ private:
     void Compile_Assert(bool condition, const char* msg);
 
     /**
-     * Get the shader instruction for a given offset in the current shader program
-     * @param offset Offset in the current shader program of the instruction
-     * @return Instruction at the specified offset
-     */
-    Instruction GetShaderInstruction(size_t offset) {
-        Instruction instruction;
-        std::memcpy(&instruction, &setup->program_code[offset], sizeof(Instruction));
-        return instruction;
-    }
-
-    /**
      * Analyzes the entire shader program for `CALL` instructions before emitting any code,
      * identifying the locations where a return needs to be inserted.
      */
@@ -130,10 +117,8 @@ private:
     /// Branches that need to be fixed up once the entire shader program is compiled
     std::vector<std::pair<Gen::FixupBranch, unsigned>> fixup_branches;
 
-    using CompiledShader = void(const void* setup, const u8* start_addr, void* state);
+    using CompiledShader = void(void* registers, const u8* start_addr);
     CompiledShader* program = nullptr;
-
-    const ShaderSetup* setup = nullptr;
 };
 
 } // Shader
