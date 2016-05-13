@@ -22,8 +22,12 @@ struct State {
     /// Pica registers
     Regs regs;
 
+    Shader::UnitState<false> shader_units[4];
+
     Shader::ShaderSetup vs;
     Shader::ShaderSetup gs;
+
+    std::array<Math::Vec4<float24>, 16> vs_default_attributes;
 
     struct {
         union LutEntry {
@@ -61,6 +65,15 @@ struct State {
 
     // This is constructed with a dummy triangle topology
     PrimitiveAssembler<Shader::OutputVertex> primitive_assembler;
+
+    /// Current geometry shader state
+    struct GeometryShaderState {
+        // Buffer used for geometry shader inputs
+        Shader::InputVertex buffer;
+        // The current index into the buffer
+        unsigned int index;
+    } gs_input_buffer;
+
 };
 
 extern State g_state; ///< Current Pica state
