@@ -504,6 +504,8 @@ static ResultCode CreateThread(Handle* out_handle, s32 priority, u32 entry_point
             name, entry_point, priority, arg, processor_id, stack_top));
     CASCADE_RESULT(*out_handle, Kernel::g_handle_table.Create(std::move(thread)));
 
+    thread->context.fpscr = 0x03C00000; // FPSCR_DEFAULT_NAN | FPSCR_FLUSH_TO_ZERO | FPSCR_ROUND_TOZERO
+
     LOG_TRACE(Kernel_SVC, "called entrypoint=0x%08X (%s), arg=0x%08X, stacktop=0x%08X, "
         "threadpriority=0x%08X, processorid=0x%08X : created handle=0x%08X", entry_point,
         name.c_str(), arg, stack_top, priority, processor_id, *out_handle);
