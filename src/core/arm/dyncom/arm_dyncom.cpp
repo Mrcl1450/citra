@@ -94,6 +94,10 @@ void ARM_DynCom::ResetContext(Core::ThreadContext& context, u32 stack_top, u32 e
     context.pc = entry_point;
     context.sp = stack_top;
     context.cpsr = USER32MODE | ((entry_point & 1) << 5); // Usermode and THUMB mode
+
+    // Set up float status and control register
+    //TODO: This should be part of svcCreateThread instead
+    context.fpscr = FPSCR_DEFAULT_NAN | FPSCR_FLUSH_TO_ZERO | FPSCR_ROUND_TOZERO; // 0x03C00000
 }
 
 void ARM_DynCom::SaveContext(Core::ThreadContext& ctx) {
