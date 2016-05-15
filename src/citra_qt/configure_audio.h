@@ -8,14 +8,14 @@
 #include <QWidget>
 
 namespace Ui {
-    class ConfigureAudio;
+class ConfigureAudio;
 }
 
 class ConfigureAudio : public QWidget {
     Q_OBJECT
 
 public:
-    explicit ConfigureAudio(QWidget *parent = nullptr);
+    explicit ConfigureAudio(QWidget* parent = nullptr);
     ~ConfigureAudio();
 
     void applyConfiguration();
@@ -23,6 +23,5 @@ public:
 private:
     void setConfiguration();
 
-private:
     std::unique_ptr<Ui::ConfigureAudio> ui;
 };
