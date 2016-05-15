@@ -3,10 +3,12 @@ set(SRCS
             codec.cpp
             hle/dsp.cpp
             hle/filter.cpp
+            hle/mixers.cpp
             hle/pipe.cpp
             hle/source.cpp
             interpolate.cpp
             sink_details.cpp
+            time_stretch.cpp
             )
 
 set(HEADERS
@@ -15,12 +17,14 @@ set(HEADERS
             hle/common.h
             hle/dsp.h
             hle/filter.h
+            hle/mixers.h
             hle/pipe.h
             hle/source.h
             interpolate.h
             null_sink.h
             sink.h
             sink_details.h
+            time_stretch.h
             )
 
 include_directories(../../externals/soundtouch/include)
