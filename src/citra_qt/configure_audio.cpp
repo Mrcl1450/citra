@@ -16,7 +16,7 @@ ConfigureAudio::ConfigureAudio(QWidget *parent) :
 
     ui->output_sink_combo_box->clear();
     for (const auto& sink_detail : AudioCore::g_sink_details) {
-        ui->output_sink_combo_box->insertItem(0, sink_detail.id);
+        ui->output_sink_combo_box->insertItem(0, sink_detail.name, QVariant(sink_detail.id));
     }
 
     this->setConfiguration();
@@ -27,7 +27,7 @@ ConfigureAudio::~ConfigureAudio() {
 
 void ConfigureAudio::setConfiguration() {
     for (int index = 0; index < ui->output_sink_combo_box->count(); index++) {
-        if (ui->output_sink_combo_box->itemText(index).toStdString() == Settings::values.sink_id) {
+        if (ui->output_sink_combo_box->itemData(index).toInt() == Settings::values.sink_id) {
             ui->output_sink_combo_box->setCurrentIndex(index);
             break;
         }
@@ -35,6 +35,6 @@ void ConfigureAudio::setConfiguration() {
 }
 
 void ConfigureAudio::applyConfiguration() {
-    Settings::values.sink_id = ui->output_sink_combo_box->itemText(ui->output_sink_combo_box->currentIndex()).toStdString();
+    Settings::values.sink_id = ui->output_sink_combo_box->itemData(ui->output_sink_combo_box->currentIndex()).toInt();
     Settings::Apply();
 }
