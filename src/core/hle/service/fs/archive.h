@@ -80,6 +80,12 @@ public:
 ResultVal<ArchiveHandle> OpenArchive(ArchiveIdCode id_code, FileSys::Path& archive_path);
 
 /**
+* Control an archive
+* @param handle Handle to the archive to control
+*/
+ResultCode ControlArchive(ArchiveHandle handle);
+
+/**
  * Closes an archive
  * @param handle Handle to the archive to close
  */

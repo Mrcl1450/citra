@@ -54,6 +54,8 @@ enum class SystemInfoMemUsageRegion {
     BASE = 3,
 };
 
+void Break(u8 break_reason);
+
 void CallSVC(u32 immediate);
 
 } // namespace

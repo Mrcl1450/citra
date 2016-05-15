@@ -390,6 +390,105 @@ static void OpenArchive(Service::Interface* self) {
     }
 }
 
+ResultCode GetTimeStamp(u32& input_buffer, u32& input_size, u32& output_buffer, u32& output_size) {
+    const std::string filepath = Common::UTF16ToUTF8(std::u16string(reinterpret_cast<char16_t*>
+        (Memory::GetPointer(input_buffer), input_size)));
+
+    u64 timestamp = FileUtil::GetFileTimeStamp(filepath);
+
+    if (timestamp != 0) {
+        memcpy(Memory::GetPointer(output_buffer), &timestamp, output_size);
+        LOG_DEBUG(Service_FS, "timestamp=0x016llX", timestamp);
+        return RESULT_SUCCESS;
+    } else {
+        LOG_ERROR(Service_FS, "File was not exist, filepath :%s", filepath.c_str());
+        return ResultCode(ErrorDescription::FS_NotFound, ErrorModule::FS,
+            ErrorSummary::NotFound, ErrorLevel::Permanent);
+    }
+}
+
+/**
+ * FS_User::ControlArchive service function
+ *  Inputs:
+ *      0 : Header code [0x080D0144]
+ *    1-2 : u64, Archive Handle
+ *      3 : Action
+ *      4 : Input Size
+ *      5 : Output Size
+ *      6 : (inputSize << 4) | 0xA
+ *      7 : void* Input
+ *      8 : (outputSize << 4) | 0xC
+ *      9 : void* Output
+ *  Outputs:
+ *      0 : Header code
+ *      1 : Result code
+ *  Notes:
+ *      Action:
+ *             0 : Commits save data changes.
+ *                     Input : None
+ *                    Output : None
+ *             1 : Retrieves a file's last-modified timestamp
+ *                     Input : u16*, UTF-16 Path
+ *                    Output : u64, Time Stamp
+ *         30877 : Calls FSPXI command 0x00560102(unknown)
+ *                     Input : u16*, 12 bytes
+ *                    Output : 16 bytes
+ */
+static void ControlArchive(Service::Interface* self) {
+    u32* cmd_buff = Kernel::GetCommandBuffer();
+
+    ArchiveHandle archive_handle = MakeArchiveHandle(cmd_buff[1], cmd_buff[2]);
+    u32 action = cmd_buff[3];
+    u32 input_size = cmd_buff[4];
+    u32 output_size = cmd_buff[5];
+    u32 input_translation = cmd_buff[6];
+    u32 input_buffer = cmd_buff[7];
+    u32 output_translation = cmd_buff[8];
+    u32 output_buffer = cmd_buff[9];
+
+    if (!IPC::CheckBufferMappingTranslation(IPC::BufferMappingType::InputBuffer, input_size, input_translation)) {
+        cmd_buff[0] = IPC::MakeHeader(0x0, 1, 0); //0x40 was found by reverse engineering
+        cmd_buff[1] = 0xD9001830; //The error code 0xD9001830 was found by reverse engineering
+        LOG_ERROR(Service_FS, "Check input_buffer_mapping_translation failed");
+        return;
+    }
+
+    if (!IPC::CheckBufferMappingTranslation(IPC::BufferMappingType::OutputBuffer, output_size, output_translation)) {
+        cmd_buff[0] = IPC::MakeHeader(0x0, 1, 0); //0x40 was found by reverse engineering
+        cmd_buff[1] = 0xD9001830; //The error code 0xD9001830 was found by reverse engineering
+        LOG_ERROR(Service_FS, "Check output_buffer_mapping_translation failed");
+        return;
+    }
+
+    switch (action) {
+    case 0:
+        cmd_buff[0] = IPC::MakeHeader(0x80D, 1, 4); //0x80d0044 was found by reverse engineering
+        cmd_buff[1] = ControlArchive(archive_handle).raw;
+        cmd_buff[2] = input_translation;
+        cmd_buff[3] = input_buffer;
+        cmd_buff[4] = output_translation;
+        cmd_buff[5] = output_buffer;
+        LOG_WARNING(Service_FS, "(STUBBED) Commits save data changes, archive_handle=0x%08X",archive_handle);
+        break;
+    case 1:
+        cmd_buff[0] = IPC::MakeHeader(0x80D, 1, 4); //0x80d0044 was found by reverse engineering
+        cmd_buff[1] = GetTimeStamp(input_buffer, input_size, output_buffer, output_size).raw;
+        cmd_buff[2] = input_translation;
+        cmd_buff[3] = input_buffer;
+        cmd_buff[4] = output_translation;
+        cmd_buff[5] = output_buffer;
+        LOG_WARNING(Service_FS, "Retrieves a file's last-modified timestamp");
+        break;
+    case 30877:
+    default:
+        cmd_buff[0] = IPC::MakeHeader(0x80D, 1, 0);
+        cmd_buff[1] = ResultCode(ErrorDescription::NotImplemented, ErrorModule::FS,
+            ErrorSummary::NotSupported, ErrorLevel::Permanent).raw;
+        UNIMPLEMENTED();
+        return;
+    }
+}
+
 /**
  * FS_User::CloseArchive service function
  *  Inputs:
@@ -817,7 +916,7 @@ const Interface::FunctionInfo FunctionTable[] = {
     {0x080A0244, RenameDirectory,          "RenameDirectory"},
     {0x080B0102, OpenDirectory,            "OpenDirectory"},
     {0x080C00C2, OpenArchive,              "OpenArchive"},
-    {0x080D0144, nullptr,                  "ControlArchive"},
+    {0x080D0144, ControlArchive,           "ControlArchive"},
     {0x080E0080, CloseArchive,             "CloseArchive"},
     {0x080F0180, FormatThisUserSaveData,   "FormatThisUserSaveData"},
     {0x08100200, nullptr,                  "CreateSystemSaveData"},

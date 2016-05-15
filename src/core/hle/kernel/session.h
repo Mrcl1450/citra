@@ -46,7 +46,26 @@ constexpr u32 MappedBufferDesc(u32 size, MappedBufferPermissions perms) {
     return 0x8 | (size << 4) | (u32)perms;
 }
 
-}
+enum BufferMappingType {
+    InputBuffer     = 1,
+    OutputBuffer    = 2,
+    ReadWriteBuffer = InputBuffer| OutputBuffer
+};
+
+/** CheckBufferMappingTranslation function
+ *    This function will check the access permission flags of the translation whether match their operation
+ *    Structure:
+ *        bit 1-2 : Access permission flags for the receiving process: 1=read-only, 2=write-only, 3=read-write.
+ *                  Specifying 0 will cause a kernel panic.
+ *        bit 3   : This kind of translation is enabled by setting bit3 in the translation descriptor.
+ *        bit 4-? : Size in bytes of the shared memory block.
+ *    Notes:
+ *        The IPC subsystem can temporarily map a whole buffer of the sender's memory into the receiver's memory space.
+ *        This is useful for large buffers, for which the overhead of copying static buffer data around would be too expensive.
+ */
+bool CheckBufferMappingTranslation(BufferMappingType mapping_type, u32 size, u32 translation);
+
+} // namespace IPC
 
 namespace Kernel {
 

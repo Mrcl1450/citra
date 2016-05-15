@@ -28,6 +28,7 @@
 #include "core/hle/service/service.h"
 #include "core/hle/service/fs/archive.h"
 #include "core/hle/service/fs/fs_user.h"
+#include "core/hle/svc.h"
 #include "core/hle/result.h"
 #include "core/memory.h"
 
@@ -283,6 +284,36 @@ ResultVal<ArchiveHandle> OpenArchive(ArchiveIdCode id_code, FileSys::Path& archi
     }
     handle_map.emplace(next_handle, std::move(res));
     return MakeResult<ArchiveHandle>(next_handle++);
+}
+
+bool CheckArchiveHandle(ArchiveHandle handle) {
+    for (auto itr = handle_map.begin(); itr != handle_map.end(); ++itr) {
+        if (itr->first == handle) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ResultCode ControlArchive(ArchiveHandle handle) {
+    ResultCode result = RESULT_SUCCESS;
+
+    if (CheckArchiveHandle(handle)) {
+        result = RESULT_SUCCESS; // TODO(JamePeng): sub_10C24C
+    } else {
+        result = ResultCode(ErrorDescription::FS_ArchiveNotMounted,
+            ErrorModule::FS, ErrorSummary::NotFound, ErrorLevel::Status); // 0xc8804465 was found by reverse engineering
+    }
+
+    u32 level = result.raw >> 27;
+    if (result.raw & 0x80000000) {
+        level -= 32;
+    }
+    if (level == 0xFFFFFFFF) {
+        LOG_ERROR(Service_FS, "Fatal Error : Invalid operation");
+        SVC::Break(0); //PANIC
+    }
+    return result;
 }
 
 ResultCode CloseArchive(ArchiveHandle handle) {

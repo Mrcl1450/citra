@@ -98,6 +98,23 @@ bool Exists(const std::string &filename)
     return (result == 0);
 }
 
+// Return file timestamp if the file exists, return 0 if file no exists
+u64 GetFileTimeStamp(const std::string filepath) {
+
+    if (FileUtil::Exists(filepath)) {
+        struct stat64 file_info;
+
+#ifdef _WIN32
+        if (0 == _wstat64(Common::UTF8ToUTF16W(filepath).c_str(), &file_info)) {
+#else
+        if (0 == stat64(filepath.c_str(), &file_info)) {
+#endif
+            return static_cast<u32>(file_info.st_mtime);
+        }
+    }
+    return 0;
+}
+
 // Returns true if filename is a directory
 bool IsDirectory(const std::string &filename)
 {

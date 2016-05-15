@@ -399,7 +399,7 @@ static ResultCode ArbitrateAddress(Handle handle, u32 address, u32 type, u32 val
     return res;
 }
 
-static void Break(u8 break_reason) {
+void Break(u8 break_reason) {
     LOG_CRITICAL(Debug_Emulated, "Emulated program broke execution!");
     std::string reason_str;
     switch (break_reason) {

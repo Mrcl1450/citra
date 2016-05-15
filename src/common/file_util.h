@@ -67,6 +67,9 @@ struct FSTEntry
 // Returns true if file filename exists
 bool Exists(const std::string &filename);
 
+// Return file timestamp if the file exists, return 0 if file no exists
+u64 GetFileTimeStamp(const std::string filepath);
+
 // Returns true if filename is a directory
 bool IsDirectory(const std::string &filename);
 
