@@ -88,6 +88,11 @@ static StereoFrame16 GenerateCurrentFrame() {
 static std::unique_ptr<AudioCore::Sink> sink;
 static AudioCore::TimeStretcher time_stretcher;
 
+static void OutputCurrentFrame(const StereoFrame16& frame) {
+    time_stretcher.AddSamples(&frame[0][0], frame.size());
+    sink->EnqueueSamples(time_stretcher.Process(sink->SamplesInQueue()));
+}
+
 // Public Interface
 
 void Init() {
@@ -119,8 +124,9 @@ bool Tick() {
     StereoFrame16 current_frame = {};
 
     // TODO(merry): Only perform audio configuration when emulated application signals us to do so.
-
     current_frame = GenerateCurrentFrame();
+
+    OutputCurrentFrame(current_frame);
 
     return true;
 }
