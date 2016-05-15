@@ -6,18 +6,12 @@
 #include <memory>
 
 #include "audio_core/hle/dsp.h"
-#include "audio_core/hle/mixers.h"
 #include "audio_core/hle/pipe.h"
 #include "audio_core/hle/source.h"
 #include "audio_core/sink.h"
-#include "audio_core/time_stretch.h"
-
-#include "core/hle/service/dsp_dsp.h"
 
 namespace DSP {
 namespace HLE {
-
-// Region management
 
 std::array<SharedMemory, 2> g_regions;
 
@@ -46,21 +40,30 @@ static SharedMemory& WriteRegion() {
     return g_regions[1 - CurrentRegionIndex()];
 }
 
-// Audio processing and mixing
-
 static std::array<Source, num_sources> sources = {
     Source(0), Source(1), Source(2), Source(3), Source(4), Source(5),
     Source(6), Source(7), Source(8), Source(9), Source(10), Source(11),
     Source(12), Source(13), Source(14), Source(15), Source(16), Source(17),
     Source(18), Source(19), Source(20), Source(21), Source(22), Source(23)
 };
-static Mixers mixers;
 
-static StereoFrame16 GenerateCurrentFrame() {
+static std::unique_ptr<AudioCore::Sink> sink;
+
+void Init() {
+    DSP::HLE::ResetPipes();
+    for (auto& source : sources) {
+        source.Reset();
+    }
+}
+
+void Shutdown() {
+}
+
+bool Tick() {
     SharedMemory& read = ReadRegion();
     SharedMemory& write = WriteRegion();
 
-    std::array<QuadFrame32, 3> intermediate_mixes = {{{}}};
+    std::array<QuadFrame32, 3> intermediate_mixes = {};
 
     for (size_t i = 0; i < num_sources; i++) {
         write.source_statuses.status[i] = sources[i].Tick(read.source_configurations.config[i], read.adpcm_coefficients.coeff[i]);
@@ -69,79 +72,11 @@ static StereoFrame16 GenerateCurrentFrame() {
         }
     }
 
-    // TODO(merry): Reverb, Delay effects
-
-    write.dsp_status = mixers.Tick(read.dsp_configuration, read.intermediate_mix_samples, write.intermediate_mix_samples, intermediate_mixes);
-
-    StereoFrame16 output_frame = mixers.GetOutput();
-
-    // Write current output frame to the shared memory region
-    std::transform(output_frame.begin(), output_frame.end(), write.final_samples.pcm16.begin(),
-        [](const auto& sample) -> std::array<s16_le, 2> {
-            return { s16_le(sample[0]), s16_le(sample[1]) };
-        });
-
-    return output_frame;
-}
-
-// Audio output
-
-static AudioCore::TimeStretcher time_stretcher;
-static std::unique_ptr<AudioCore::Sink> sink;
-
-void OutputCurrentFrame(const StereoFrame16& current_frame) {
-    time_stretcher.AddSamples(&current_frame[0][0], current_frame.size());
-    sink->EnqueueSamples(time_stretcher.Process(sink->SamplesInQueue()));
-}
-
-// Public Interface
-
-void Init() {
-    DSP::HLE::ResetPipes();
-
-    for (auto& source : sources) {
-        source.Reset();
-    }
-
-    mixers.Reset();
-
-    time_stretcher.Reset();
-    if (sink) {
-        time_stretcher.SetOutputSampleRate(sink->GetNativeSampleRate());
-    }
-}
-
-void Shutdown() {
-    time_stretcher.Flush();
-    while (true) {
-        std::vector<s16> residual_audio = time_stretcher.Process(sink->SamplesInQueue());
-        if (residual_audio.empty())
-            break;
-        sink->EnqueueSamples(residual_audio);
-    }
-}
-
-bool Tick() {
-    bool fire_interrupt = false;
-    StereoFrame16 current_frame = {{}};
-
-    if (DSP_DSP::IsSemaphoreSignalled() && GetDspState() == DspState::On) {
-        // The ARM11 has finished writing to the shared memory region.
-        DSP_DSP::ResetSemaphore();
-
-        current_frame = GenerateCurrentFrame();
-
-        fire_interrupt = true;
-    }
-
-    OutputCurrentFrame(current_frame);
-
-    return fire_interrupt;
+    return true;
 }
 
 void SetSink(std::unique_ptr<AudioCore::Sink> sink_) {
     sink = std::move(sink_);
-    time_stretcher.SetOutputSampleRate(sink->GetNativeSampleRate());
 }
 
 } // namespace HLE
