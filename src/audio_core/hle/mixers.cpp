@@ -2,8 +2,6 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#pragma once
-
 #include <cstddef>
 
 #include "audio_core/hle/common.h"
@@ -156,7 +154,7 @@ void Mixers::AuxReturn(const IntermediateMixSamples& read_samples) {
     }
 }
 
-void Mixers::AuxSend(IntermediateMixSamples& write_samples, const std::array<QuadFrame32, 3> input) {
+void Mixers::AuxSend(IntermediateMixSamples& write_samples, const std::array<QuadFrame32, 3>& input) {
     // NOTE: read_samples.mix{1,2}.pcm32 annoyingly have their dimensions in reverse order to QuadFrame32.
 
     state.intermediate_mix_buffer[0] = input[0];
