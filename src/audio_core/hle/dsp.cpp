@@ -13,7 +13,6 @@
 #include "audio_core/time_stretch.h"
 
 #include "core/hle/service/dsp_dsp.h"
-#include <audio_core/null_sink.h>
 
 namespace DSP {
 namespace HLE {
@@ -56,6 +55,7 @@ static std::array<Source, num_sources> sources = {
     Source(18), Source(19), Source(20), Source(21), Source(22), Source(23)
 };
 static Mixers mixers;
+static AudioCore::TimeStretcher time_stretcher;
 
 static StereoFrame16 GenerateCurrentFrame() {
     SharedMemory& read = ReadRegion();
@@ -87,13 +87,7 @@ static StereoFrame16 GenerateCurrentFrame() {
 
 // Audio output
 
-static AudioCore::TimeStretcher time_stretcher;
 static std::unique_ptr<AudioCore::Sink> sink;
-
-void OutputCurrentFrame(const StereoFrame16& current_frame) {
-    time_stretcher.AddSamples(&current_frame[0][0], current_frame.size());
-    sink->EnqueueSamples(time_stretcher.Process(sink->SamplesInQueue()));
-}
 
 // Public Interface
 
@@ -108,13 +102,6 @@ void Init() {
 }
 
 void Shutdown() {
-    time_stretcher.NullSamples();
-    while (true) {
-        std::vector<s16> residual_audio = time_stretcher.Process(sink->SamplesInQueue());
-        if (residual_audio.empty())
-            break;
-        sink->EnqueueSamples(residual_audio);
-    }
 }
 
 bool Tick() {
@@ -127,14 +114,11 @@ bool Tick() {
         current_frame = GenerateCurrentFrame();
     }
 
-    OutputCurrentFrame(current_frame);
-
     return true;
 }
 
 void SetSink(std::unique_ptr<AudioCore::Sink> sink_) {
     sink = std::move(sink_);
-    time_stretcher.SetOutputSampleRate(sink->GetNativeSampleRate());
 }
 
 } // namespace HLE

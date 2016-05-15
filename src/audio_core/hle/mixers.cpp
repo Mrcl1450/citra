@@ -16,7 +16,7 @@ namespace DSP {
 namespace HLE {
 
 /// HACK: Prevent clipping by scaling down the volume.
-constexpr float PREVENT_CLIPPING_HACK = 0.3f;
+constexpr float PREVENT_CLIPPING_HACK = 0.3;
 
 void Mixers::Reset() {
     current_frame.fill({});
