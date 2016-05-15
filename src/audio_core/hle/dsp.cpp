@@ -97,6 +97,8 @@ void OutputCurrentFrame(const StereoFrame16& current_frame) {
 
 // Public Interface
 
+static std::unique_ptr<AudioCore::Sink> sink;
+
 void Init() {
     DSP::HLE::ResetPipes();
     for (auto& source : sources) {
