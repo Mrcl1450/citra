@@ -44,6 +44,7 @@ set(SRCS
             hle/kernel/timer.cpp
             hle/kernel/vm_manager.cpp
             hle/service/ac_u.cpp
+            hle/service/act_a.cpp
             hle/service/act_u.cpp
             hle/service/am/am.cpp
             hle/service/am/am_app.cpp
@@ -179,6 +180,7 @@ set(HEADERS
             hle/kernel/vm_manager.h
             hle/result.h
             hle/service/ac_u.h
+            hle/service/act_a.h
             hle/service/act_u.h
             hle/service/am/am.h
             hle/service/am/am_app.h
